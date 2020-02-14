@@ -5,14 +5,5 @@ It contains many lines, with some blank lines.
 There are also  tabs.
 
 There are many words too. Some of the words are palindromes like the following:
-Anna Civic Kayak.
-Level Madam
-Mom
-Noon.
-Racecar
-Radar.
-Redder.
-Refer.
 
-Repaper
 Rotator Rotor Sagas Solos Stats Tenet Wow.
