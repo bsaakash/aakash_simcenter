@@ -29,19 +29,27 @@ void process_files(int n...) {
         ifstream fin(fname);
         if (fin.is_open()) {
 
-            input_file_name.emplace_back(fname);
-
             int line_count(0);
+            int word_count(0);
             while (getline(fin, line)) {
 
                 int line_length(strlen(line.c_str()));
                 if (line_length > 0) {
                     ++line_count;
+                    char * pch;
+                    pch = strtok(const_cast<char *>(line.c_str()), " .");
+                    while (pch != nullptr)
+                    {
+                        ++word_count;
+                        printf ("%s\n", pch);
+                        pch = strtok(nullptr, " .");
+                    }
                 }
-//                cout << line << " - " << line_length << endl;
             }
             fin.close();
 
+            input_file_name.emplace_back(fname);
+            number_of_words.emplace_back(to_string(word_count));
             number_of_lines.push_back(to_string(line_count));
 
         } else cout << "Unable to open file " << fname << endl;
@@ -53,7 +61,7 @@ void process_files(int n...) {
     if (fout.is_open()) {
 
         for (int i = 0; i < n - 1; ++i) {
-            fout << input_file_name[i] << ", " << number_of_lines[i] << endl;
+            fout << input_file_name[i] << ", " << number_of_words[i] << ", " << number_of_lines[i] << endl;
         }
 
         fout.close();
