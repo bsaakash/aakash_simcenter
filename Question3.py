@@ -1,5 +1,5 @@
 # Importing modules
-from scipy.stats import lognorm, uniform, gaussian_kde, beta, truncnorm, triang
+from scipy.stats import lognorm, uniform, gaussian_kde, beta, truncnorm, triang, gamma
 from scipy.stats import norm as gaussian
 from scipy.stats import multivariate_normal as mvn
 import numpy as np
@@ -139,10 +139,18 @@ print("The estimated variance of the Monte Carlo estimator is: ", sample_varianc
 ########################################################################################################################
 # (b) Approximating the probability density of the flow rate using the same sample set
 
+lognorm_params = lognorm.fit(y)
+gamma_params = gamma.fit(y)
+
+plt.figure(figsize=(10, 8))
 plt.hist(y, density=True, color='b', label='Outputs from model')
-x = np.linspace(0, 450, 100)
+x = np.linspace(0, 450, 200)
 kde = gaussian_kde(y)
 plt.plot(x, kde(x), 'r-', label='Gaussian kde')
+plt.plot(x, lognorm.pdf(x, s=lognorm_params[0], loc=lognorm_params[1], scale=lognorm_params[2]),
+         'k-', label='Lognormal fit')
+plt.plot(x, gamma.pdf(x, a=gamma_params[0], loc=gamma_params[1], scale=gamma_params[2]),
+         'g-', label='Gamma fit')
 plt.xlabel("Flow rate m^3/year")
 plt.ylabel("Probability density")
 plt.legend()
@@ -302,9 +310,9 @@ def priors_func(samples):
 # Using Metropolis algorithm to sample from the posterior
 t = time.time()
 current_state = np.array([0.15, 20, 89000, 89, 1400, 11000, 5]).reshape(1, 7)
-nsamples_posterior = 100
-nburn_in = 100
-thinning = 1
+nsamples_posterior = 1000
+nburn_in = 2000
+thinning = 5
 nsteps = nburn_in + thinning * nsamples_posterior
 # proposal_scales = [0.02, 30, 2000, 10, 50, 35, 1] # 0.7%
 # proposal_scales = [0.01, 5, 200, 4, 10, 35, 1] # 1.8%
@@ -356,22 +364,31 @@ for i in range(7):
     plt.show()
 
 # Plotting the posterior for the six parameters
-lower = [0.05, 0, 0, 0, 1000, 9000]
-upper = [0.25, 5000, 2 * 89000, 2 * 89, 1800, 13500]
-nrow = 2
+lower = [0.05, 0, 0, 0, 1000, 9000, -1]
+upper = [0.25, 5000, 2*89000, 2*89, 1800, 13500, 11]
+nrow = 3
 ncol = 3
-figsize = (4 * ncol + 1, 4 * nrow + 1)
+figsize = (4*ncol+1, 4*nrow+1)
 prior_dists = [rw, r, tu, tl, l, kw]
+
 # Plots
 f, axs = plt.subplots(nrow, ncol, figsize=figsize, constrained_layout=True)
 for i, ax in enumerate(axs.flatten()):
     if i < len(prior_dists):
         x = np.linspace(min(min(posterior_samples[:, i]), lower[i]),
-                        max(max(posterior_samples[:, i]), upper[i]), 300)
+                            max(max(posterior_samples[:, i]),upper[i]), 300)
         ax.plot(x, prior_dists[i].pdf(x), 'b-', label="Prior " + ttls[i])
         y = gaussian_kde(posterior_samples[:, i])
         ax.plot(x, y(x), 'r-', label="Posterior " + ttls[i])
-        ax.set_xlabel(par_names[i])
+        ax.set_xlabel(ttls[i])
+        ax.legend()
+    elif i == 6:
+        x = np.linspace(min(min(posterior_samples[:, i]), lower[i]),
+                            max(max(posterior_samples[:, i]),upper[i]), 300)
+        ax.plot(x, uniform(loc=0, scale=10).pdf(x), 'b-', label="Prior " + ttls[i])
+        y = gaussian_kde(posterior_samples[:, i])
+        ax.plot(x, y(x), 'r-', label="Posterior " + ttls[i])
+        ax.set_xlabel(ttls[i])
         ax.legend()
 plt.show()
 
