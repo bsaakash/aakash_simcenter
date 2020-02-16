@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <unordered_set>
+#include <cstdlib>
 
 using namespace std;
 
@@ -26,18 +27,15 @@ vector<int> count_stuff(const string &filename) {
         string line;
         while (getline(infile, line)) { // Gets one line at a time from the file
 
-            // Computes the length of the line from the file
-            int line_length(strlen(line.c_str()));
-
             // If the line is not blank
-            if (line_length > 0) {
+            if (!line.empty()) {
 
                 // Increments the line count
                 ++line_count;
 
                 // Counts the number of characters in the line excluding spaces and increments the character count
-                for (int i = 0; i != line_length; i++) {
-                    if (line[i] != ' ') ++char_count;
+                for (auto c: line) {
+                    if (isgraph(c)) ++char_count;
                 }
 
                 // Tokenizing the line - only spaces and periods are considered as separators
@@ -63,13 +61,16 @@ vector<int> count_stuff(const string &filename) {
                     // If the word was inserted into the set, it is unique and result.second will be true.
                     // Only then check if the string is a palindrome and increment the palindrome count.
                     if (result.second) {
-                        // Check if a string is a palindrome by comparing it with the reverse of itself. If the string
-                        // is a palindrome then the palindrome count is incremented.
-                        if (strcmp(s.c_str(), string(s.rbegin(), s.rend()).c_str()) == 0) ++palindrome_count;
+                        // Check if a string is a palindrome by checking if the first half of the string is equal to the
+                        // reverse of the last half of the string.
+                        // If the string is a palindrome then the palindrome count is incremented.
+                        // size() returns an unsigned integral type, so checking up to s.size()/2 is enough for both
+                        // odd- and even-length strings.
+                        if (equal(s.begin(), s.begin() + s.size() / 2, s.rbegin())) ++palindrome_count;
                     }
 
                     // strtok takes nullptr as argument on subsequent calls and returns a pointer to the beginning of
-                    // the nest token.
+                    // the next token.
                     word = strtok(nullptr, " .");
                 }
             }
@@ -91,18 +92,35 @@ vector<int> count_stuff(const string &filename) {
 
 // Define a function which can take N arguments
 template<typename... fs>
-void process_files(fs... all) {
+int process_files(fs... all) {
 
     vector <string> filenames = {all...};
 
     // There should be at least 2 file names passed - one input and one output.
     // If two file names are not passed, return.
     if (filenames.size() < 2) {
-        cout << "At least two file names must be passed as arguments." << endl;
-        return;
+        cerr << "At least two file names must be passed as arguments." << endl;
+        return EXIT_FAILURE;
     }
 
-    // Open the last file for writing output. It creates a new file if it doesn't exist an overwrites the contents
+    // Check if all the input files can be read
+    for (int i(0); i < filenames.size() - 1; i++) {
+
+        // Create a stream object associated with the input file
+        ifstream fin(filenames[i]);
+
+        // Check if the stream is associated to the file
+        if (!fin.is_open()) {
+            cerr << "Unable to open file: " << filenames[i] << endl;
+            cerr << "Exiting from the function without processing all files and without creating the output file."
+                 << endl;
+            return EXIT_FAILURE;
+        } else { // If file opens
+            continue;
+        }
+    }
+
+    // Open the last file for writing output. It creates a new file if it doesn't exist and overwrites the contents
     // if the file exists.
     ofstream outfile(filenames[filenames.size() - 1]);
 
@@ -111,27 +129,22 @@ void process_files(fs... all) {
 
         ifstream fin(filenames[i]);
 
-        // Try to open the file
-        if (!fin.is_open()) {
-            cout << "Unable to open file " << filenames[i] << endl;
-        } else { // If file opens
-            cout << "Opened input file " << filenames[i] << endl;
+        cout << "Processing input file " << filenames[i] << endl;
 
-            // Call the function to count_stuff to get the required counts
-            vector<int> v = count_stuff(filenames[i]);
+        // Call the function count_stuff to get the required counts
+        vector<int> v = count_stuff(filenames[i]);
 
-            // Write a line to the output file with the required values
-            outfile << filenames[i] << ", " << to_string(v[0])
-                    << ", " << to_string(v[1]) << ", " << to_string(v[2])
-                    << ", " << to_string(v[3]) << ", " << to_string(v[4]);
+        // Write a line to the output file with the required values
+        outfile << filenames[i] << ", " << to_string(v[0])
+                << ", " << to_string(v[1]) << ", " << to_string(v[2])
+                << ", " << to_string(v[3]) << ", " << to_string(v[4]);
 
-            // Add newline character for all but the last file.
-            if (i < filenames.size() - 2) outfile << endl;
-                // If the last input file has been processed, print message.
-            else cout << "Finished processing all files." << endl;
-
-        }
+        // Add newline character for all but the last file.
+        if (i < filenames.size() - 2) outfile << endl;
+            // If the last input file has been processed, print message.
+        else cout << "Finished processing all files." << endl;
     }
+    return EXIT_SUCCESS;
 }
 
 
@@ -143,7 +156,7 @@ int main() {
 
     // Call the function which takes N arguments, of which the first N-1 are names of input files and the Nth argument
     // is the name of the output file to which the required outputs will be written for each input file.
-    process_files(in1, in2, out);
+    int ret = process_files(in1, in2, out);
 
-    return 0;
+    return ret;
 }
