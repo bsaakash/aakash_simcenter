@@ -91,28 +91,31 @@ vector<int> count_stuff(const string &filename) {
 
 
 // Define a function which can take N arguments
-template<typename... fs>
-int process_files(fs... all) {
+template<typename... file_name_types>
+int process_files(file_name_types... file_names) {
 
-    vector <string> filenames = {all...};
+    vector <string> file_name_vector = {file_names...}; // Specifying a vector of strings here is not the best design
+    // and will cause an error on compilation if the function is attempted to be called with non-string arguments. But
+    // if the function is called with string arguments, then this will execute correctly.
 
     // There should be at least 2 file names passed - one input and one output.
     // If two file names are not passed, return.
-    if (filenames.size() < 2) {
+    if (sizeof...(file_names) < 2) {
         cerr << "At least two file names must be passed as arguments." << endl;
         return EXIT_FAILURE;
     }
 
     // Check if all the input files can be read
-    for (int i(0); i < filenames.size() - 1; i++) {
+    for (int i(0); i < sizeof...(file_names) - 1; i++) {
+//    for (int i(0); i < file_name_vector.size() - 1; i++) {
 
         // Create a stream object associated with the input file
-        ifstream fin(filenames[i]);
+        ifstream fin(file_name_vector[i]);
 
         // Check if the stream is associated to the file
         if (!fin.is_open()) {
-            cerr << "Unable to open file: " << filenames[i] << endl;
-            cerr << "Exiting from the function without processing all files and without creating the output file."
+            cerr << "Unable to open file: " << file_name_vector[i] << endl;
+            cerr << "Exiting from the function without processing all files and without updating the output file."
                  << endl;
             return EXIT_FAILURE;
         } else { // If file opens
@@ -122,25 +125,23 @@ int process_files(fs... all) {
 
     // Open the last file for writing output. It creates a new file if it doesn't exist and overwrites the contents
     // if the file exists.
-    ofstream outfile(filenames[filenames.size() - 1]);
+    ofstream outfile(file_name_vector[file_name_vector.size() - 1]);
 
     // Loop over the first n-1 files
-    for (int i(0); i < filenames.size() - 1; i++) {
+    for (int i(0); i < file_name_vector.size() - 1; i++) {
 
-        ifstream fin(filenames[i]);
-
-        cout << "Processing input file " << filenames[i] << endl;
+        cout << "Processing input file " << file_name_vector[i] << endl;
 
         // Call the function count_stuff to get the required counts
-        vector<int> v = count_stuff(filenames[i]);
+        vector<int> v = count_stuff(file_name_vector[i]);
 
         // Write a line to the output file with the required values
-        outfile << filenames[i] << ", " << to_string(v[0])
+        outfile << file_name_vector[i] << ", " << to_string(v[0])
                 << ", " << to_string(v[1]) << ", " << to_string(v[2])
                 << ", " << to_string(v[3]) << ", " << to_string(v[4]);
 
         // Add newline character for all but the last file.
-        if (i < filenames.size() - 2) outfile << endl;
+        if (i < file_name_vector.size() - 2) outfile << endl;
             // If the last input file has been processed, print message.
         else cout << "Finished processing all files." << endl;
     }
@@ -156,7 +157,13 @@ int main() {
 
     // Call the function which takes N arguments, of which the first N-1 are names of input files and the Nth argument
     // is the name of the output file to which the required outputs will be written for each input file.
-    int ret = process_files(in1, in2, out);
+
+//    int ret = process_files(in1, out);  // Processes one file and writes one line of output
+
+    int ret = process_files(in1, in2, out);  // Processes 2 input files and writes two lines of output
+
+//    int ret = process_files("not.txt", "there.txt");  // These input files do not exist and the function exits with
+//    an error message
 
     return ret;
 }
